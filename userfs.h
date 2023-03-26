@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#define NEED_RESIZE
 
 /**
  * User-defined in-memory filesystem. It is as simple as possible.
