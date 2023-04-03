@@ -68,8 +68,7 @@ struct file *file_create(const char *filename) {
     res->refs = 1;
     res->delete = 0;
     res->size = 0;
-    res->name = malloc(strlen(filename) + 1);
-    memcpy(res->name, filename, strlen(filename) + 1);
+    res->name = strdup(filename);
 
     res->prev = NULL;
     res->next = file_list;
