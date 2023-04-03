@@ -58,7 +58,7 @@ struct file *file_find(const char *filename) {
     size_t name_size = strlen(filename);
     struct file *ptr = file_list;
     while (ptr != NULL) {
-        if (!ptr->delete && name_size == strlen(ptr->name) && memcmp(filename, ptr->name, name_size) == 0) {
+        if (!ptr->delete && strcmp(filename, ptr->name) == 0) {
             ptr->refs++;
             return ptr;
         }
@@ -73,8 +73,7 @@ struct file *file_create(const char *filename) {
     res->refs = 1;
     res->delete = 0;
     res->size = 0;
-    res->name = malloc(strlen(filename) + 1);
-    memcpy(res->name, filename, strlen(filename) + 1);
+    res->name = strdup(filename);
 
     res->prev = NULL;
     res->next = file_list;
