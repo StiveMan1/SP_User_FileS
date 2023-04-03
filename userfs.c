@@ -1,11 +1,7 @@
 #include "userfs.h"
 #include <stddef.h>
-#include <limits.h>
 #include <string.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
-#include <stdbool.h>
 
 enum {
     BLOCK_SIZE = 512,
@@ -55,7 +51,6 @@ struct file {
 static struct file *file_list = NULL;
 
 struct file *file_find(const char *filename) {
-    size_t name_size = strlen(filename);
     struct file *ptr = file_list;
     while (ptr != NULL) {
         if (!ptr->delete && strcmp(filename, ptr->name) == 0) {
@@ -73,7 +68,8 @@ struct file *file_create(const char *filename) {
     res->refs = 1;
     res->delete = 0;
     res->size = 0;
-    res->name = strdup(filename);
+    res->name = malloc(strlen(filename) + 1);
+    memcpy(res->name, filename, strlen(filename) + 1);
 
     res->prev = NULL;
     res->next = file_list;
@@ -85,7 +81,7 @@ struct file *file_create(const char *filename) {
 void file_resize(struct file *res, size_t new_size) {
     struct block *ptr = res->block_list;
     struct block *temp = NULL;
-    size_t size = 0, add = 0;
+    size_t size = 0, add;
 
     while (size < new_size) {
         if (ptr == NULL) {
@@ -190,6 +186,14 @@ void filedesc_make_free(int fd) {
     file_descriptors[fd]->is_free = 1;
     file_descriptors[fd]->flag = 0;
     file_descriptor_count--;
+
+    if (file_descriptor_count == 0) {
+        for (int i = 0; i < file_descriptor_capacity; i++)
+            free(file_descriptors[i]);
+        file_descriptor_capacity = 0;
+        free(file_descriptors);
+        file_descriptors = NULL;
+    }
 }
 
 enum ufs_error_code
