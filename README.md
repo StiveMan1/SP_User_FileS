@@ -50,14 +50,6 @@ int fd = ufs_open("example.txt", UFS_CREATE); // Create or open 'example.txt'
 }
 ```
 
-## Building and Testing
-* `Building`: Compile the UserFS library and your test file (main.c) using gcc:
-
-```shell
-gcc userfs.c main.c -o userfs_test
-```
-* `Testing`: Execute the compiled test program userfs_test to validate the functionality of UserFS.
-
 ## Conclusion
 UserFS provides a basic yet functional in-memory file system implementation suitable for educational purposes or applications where a lightweight file system is required. The provided API closely resembles standard libc functions, making integration straightforward for C applications.
 
