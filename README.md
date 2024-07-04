@@ -1,96 +1,64 @@
-# File system.
-### Language: C.
+# UserFS: In-Memory File System Implementation
+## Overview
+This project involves implementing an in-memory file system called UserFS. Unlike traditional file systems, UserFS operates entirely in main memory, using dynamically allocated structures similar to those found in FAT (File Allocation Table) systems. This README provides an overview of the system, its components, and usage instructions.
 
-Need to implement own file system in memory. Don't be afraid, it
-is not too complex. For start you are given a template of the FS
-interface with some pre-implemented structures, in files userfs.h
-and userfs.c.
+## Components
+### 1. File System Interface:
 
-The file system is called UserFS, and it is very primitive. It has
-no folders - all files are in "root". Files can be created,
-deleted, opened, closed. Each file's structure is similar to the
-file system FAT: it is a block list. In userfs.c you can look up
-structures which describe a block and a file storing a list of
-blocks. The blocks have fixed size, file size is limited.
+The file system provides functions similar to libc for file management:
+* `int ufs_open(const char *filename, int flags);`
+* `ssize_t ufs_write(int fd, const char *buf, size_t size);`
+* `ssize_t ufs_read(int fd, char *buf, size_t size);`
+* `int ufs_close(int fd);`
+* `int ufs_delete(const char *filename);`
+### 2. File and Block Structures:
 
-Nothing is stored on disk - all is in the main memory, on the
-heap. Files can be read/written-to by their descriptors. API
-strongly resembles the one from libc:
+* `File Structure`: Each file in UserFS consists of a linked list of blocks. Blocks are dynamically allocated chunks of fixed size.
+* `Block Structure`: Blocks store data and pointers to the next block in the file. If a file exceeds the capacity of a single block, additional blocks are allocated and linked.
+### 3. Operations:
 
-int
-ufs_open(const char *filename, int flags);
+* `ufs_open`: Creates a new file or opens an existing one. Returns a file descriptor (fd).
+* `ufs_write`: Appends data to a file. Handles block allocation and linking as needed when the file grows.
+* `ufs_read`: Reads data from a file sequentially, moving to the next block when necessary.
+* `ufs_close`: Closes a file descriptor and frees associated resources.
+* `ufs_delete`: Deletes a file from the file system.
+## Implementation Details
+* `File Growth`: When writing data (ufs_write), if the current block is full, additional blocks are allocated and linked to accommodate new data.
 
-ssize_t
-ufs_write(int fd, const char *buf, size_t size);
+* `File Descriptor`: Each open file is associated with a file descriptor (fd) which tracks the current position in the file and other relevant metadata.
 
-ssize_t
-ufs_read(int fd, char *buf, size_t size);
+* `No Disk Storage`: UserFS operates entirely in main memory, making it suitable for applications where rapid access and simplicity are prioritized over persistence.
 
-int
-ufs_close(int fd);
+## Example Usage
 
-int
-ufs_delete(const char *filename);
+```c++
+#include "userfs.h"
 
-You can read complete descriptions of those functions in userfs.h.
+int main() {
+int fd = ufs_open("example.txt", UFS_CREATE); // Create or open 'example.txt'
 
-Your main task - implement growing of a file while new data is
-being written, and you need to implement a file descriptor. Lets
-inspect a couple of examples.
+    const char *data1 = "Hello, ";
+    ufs_write(fd, data1, strlen(data1)); // Write data1 to the file
+    
+    char buf[1024];
+    memset(buf, 0, sizeof(buf));
+    ufs_write(fd, buf, sizeof(buf)); // Write 1024 zeros to the file
+    
+    ufs_close(fd); // Close the file
+    
+    return 0;
+}
+```
 
-There is code:
+## Building and Testing
+* `Building`: Compile the UserFS library and your test file (main.c) using gcc:
 
-        int fd = ufs_open("any_file_name", UFS_CREATE);
+```shell
+gcc userfs.c main.c -o userfs_test
+```
+* `Testing`: Execute the compiled test program userfs_test to validate the functionality of UserFS.
 
-After this line inside userfs.c is created a struct file with a
-name "any_file_name", if it doesn't exist yet. Then is created a
-file descriptor struct filedesc.
+## Conclusion
+UserFS provides a basic yet functional in-memory file system implementation suitable for educational purposes or applications where a lightweight file system is required. The provided API closely resembles standard libc functions, making integration straightforward for C applications.
 
-        const char *data = "bla bla bla";
-        ufs_write(fd, data, strlen(data));
-
-The file is empty, it has no blocks, so you have to allocate the
-needed number of struct blocks. In this case it is just 1. The
-data is copied into there. The file looks like this now:
-
-        file:
-        +---------------------+
-        | bla bla bla|        | -> NULL.
-        +---------------------+
-                     ^
-                  filedesc - descriptor points here. For example,
-                             in the descriptor you can store a
-                             block number and offset in it.
-
-Then I keep writing but more data this time:
-
-        char buf[1024];
-        memset(buf, 0, sizeof(buf));
-        ufs_write(fd, buf, sizeof(buf));
-
-This is how it looks now:
-
-        file:
-        +---------------------+    +---------------------+
-        | bla bla bla 0 0 0 0 | -> | 0 0 0 0 0 0 0 0 0 0 | ->
-        +---------------------+    +---------------------+
-
-        +---------------------+
-     -> | 0 0 0 0 0 0|        | -> NULL.
-        +---------------------+
-                     ^
-                  filedesc
-
-The first block was filled to the end, and 2 new blocks were
-created. They were just appended to the end of the list.
-
-Same with the reading - a descriptor reads sequentially, jumping
-to a next block when the previous one is fully read.
-
-Since the task is to implement a library, there is no 'main'
-function and no input from anywhere. You can write tests in C in a
-separate file with 'main' and which will 'include' your solution.
-For example, make a file main.c, add 'include "userfs.h"', and in
-the function 'main' you do tests. It can all be built like this:
-
-        gcc userfs.c main.c
+For detailed function descriptions and implementation specifics, refer to `userfs.h` and `userfs.c`.
